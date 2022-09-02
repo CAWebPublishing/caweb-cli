@@ -1,6 +1,6 @@
 {
   "name": "caweb-cli",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -33,6 +33,7 @@
     "js-yaml": "^4.1.0",
     "make-dir": "^3.1.0",
     "mustache": "^4.2.0",
+    "node-fetch": "^2.6.7",
     "ora": "^4.1.1",
     "rimraf": "^3.0.2",
     "simple-git": "^3.13.0"
