@@ -124,10 +124,12 @@ function get_caweb_options(){
 
 function get_wp_options(){
     return array(
+        "WP_SITEURL" => 'siteurl',
+        "WP_HOME" => 'home',
         "WP_SITE_TITLE" => 'blogname',
         "SHOW_ON_FRONT" => 'show_on_front',
         "PAGE_ON_FRONT" => 'page_on_front',
-        "UPLOAD_FILETYPES" => 'upload_filetypes'
+        "WP_UPLOAD_FILETYPES" => 'upload_filetypes'
     );
 }
 
@@ -140,46 +142,53 @@ function init_options($env_vars){
 }
 
 function configure_divi($env_vars){
-    $options = get_divi_options();
-    $divi_options = get_option("et_divi");
-    $divi_builder = get_option("et_bfb_settings");
-    $divi_updates = get_option("et_automatic_updates_options");
+    try{
+        $options = get_divi_options();
+        $divi_options = get_option("et_divi");
+        $divi_builder = get_option("et_bfb_settings");
+        $divi_updates = get_option("et_automatic_updates_options");
 
-    foreach($options as $key => $value){
-        if( env_has_value($key, $env_vars) ){
-            $opt = $value['option'];
-            $index = $value['index'];
-            $option_value = $env_vars[$key];
+        foreach($options as $key => $value){
+            if( env_has_value($key, $env_vars) ){
+                $opt = $value['option'];
+                $index = $value['index'];
+                $option_value = $env_vars[$key];
 
-            switch( $key ){
-                case 'ET_CLASSIC_EDITOR':
-                case 'ET_PRODUCT_TOUR':
-                case 'ET_NEW_BUILDER_EXPERIENCE':
-                    $option_value = $env_vars[$key] ? 'on' : 'off';
-                    break;
-                default:
-                    break;
+                switch( $key ){
+                    case 'ET_CLASSIC_EDITOR':
+                    case 'ET_PRODUCT_TOUR':
+                    case 'ET_NEW_BUILDER_EXPERIENCE':
+                        $option_value = $env_vars[$key] ? 'on' : 'off';
+                        break;
+                    default:
+                        break;
+                }
+
+                switch( $opt ){
+                    case 'et_divi':
+                        $divi_options[$index] = $option_value; 
+                        break;
+                    case 'et_bfb_settings':
+                        $divi_builder[$index] = $option_value; 
+                        break;
+                    case 'et_automatic_updates_options':
+                        $divi_updates[$index] = $option_value; 
+                        break;
+                }
+
+                printf( 'Updated %1$s to %2$s.' . "\n", $index, ! empty($option_value) ? $option_value : 0);            
+                
             }
-
-            switch( $opt ){
-                case 'et_divi':
-                    $divi_options[$index] = $option_value; 
-                    break;
-                case 'et_bfb_settings':
-                    $divi_builder[$index] = $option_value; 
-                    break;
-                case 'et_automatic_updates_options':
-                    $divi_updates[$index] = $option_value; 
-                    break;
-            }
-            
         }
-    }
 
-    
-    update_option("et_divi", $divi_options );
-    update_option("et_bfb_settings", $divi_builder );
-    update_option("et_automatic_updates_options", $divi_updates );
+        
+        update_option("et_divi", $divi_options );
+        update_option("et_bfb_settings", $divi_builder );
+        update_option("et_automatic_updates_options", $divi_updates );
+        
+    } catch (Exception $ex) {
+        print_r("$ex");
+    }
 }
 
 /**
@@ -200,7 +209,7 @@ function wp_insert_attachment_from_url( $url, $parent_post_id = null, $id = true
 		return false;
 	}
 
-	$test_type        = wp_check_filetype( basename( $url ), null );
+	$test_type        = wp_check_filetype( basename( $url ), get_allowed_mime_types() );
     $test_name = pathinfo( basename( $url ), PATHINFO_FILENAME );
  
     /**
@@ -264,114 +273,153 @@ function wp_insert_attachment_from_url( $url, $parent_post_id = null, $id = true
 }
 
 function configure_caweb($env_vars){
-    $options = get_caweb_options();
-    $update_option = 'update_option';
+    try{
+        $options = get_caweb_options();
 
-    foreach($options as $key => $value){
-        if( env_has_value($key, $env_vars) ){
-            $option_value = $env_vars[$key];
+        foreach($options as $key => $option_name){
+            if( env_has_value($key, $env_vars) ){
+                $update_option = 'update_option';
+                $option_value = $env_vars[$key];
 
-            switch( $key ){
-                case 'CAWEB_ORG_LOGO':
-                case 'CAWEB_FAV_ICON':
-                    $option_value = wp_insert_attachment_from_url($env_vars[$key], null, false);
-                    break;
-                case 'CAWEB_GIT_USER':
-                case 'CAWEB_PRIVATE_REPO':
-                case 'CAWEB_ACCESS_TOKEN':
-                    $update_option = 'update_site_option';
-                    break;
-                default:
-                    break;
+                switch( $key ){
+                    case 'CAWEB_ORG_LOGO':
+                    case 'CAWEB_FAV_ICON':
+                        $option_value = wp_insert_attachment_from_url($option_value, null, false);
+                        break;
+                    case 'CAWEB_GIT_USER':
+                    case 'CAWEB_PRIVATE_REPO':
+                    case 'CAWEB_ACCESS_TOKEN':
+                        $update_option = 'update_site_option';
+                        break;
+                    case 'CAWEB_UTILITY_LINK1_ENABLED':
+                    case 'CAWEB_UTILITY_LINK2_ENABLED':
+                    case 'CAWEB_UTILITY_LINK3_ENABLED':
+                        $option_value = empty($option_value) ? 'false' : 'true';
+                        break;
+                    default:
+                        break;
+                }
+
+                call_user_func($update_option, $option_name, $option_value);
+
+                printf( 'Updated %1$s to %2$s.' . "\n", $option_name, $option_value);            
             }
-
-            call_user_func($update_option, $value, $option_value);
         }
+
+    } catch (Exception $ex) {
+        print_r("$ex");
     }
 }
 
 function update_site_settings($env_vars){
-    $update_option = 'update_option';
+    try{
+        
+        $options = get_wp_options();
     
-    $options = get_wp_options();
+        foreach($options as $key => $option_name ){
 
-    foreach($options as $key => $option ){
-        if( env_has_value($key, $env_vars) ){
-            // if multisite
-            if('UPLOAD_FILETYPES' === $key){
+            // if key is set as an environment variable
+            if( env_has_value($key, $env_vars) ){
+                $option_value = $env_vars[$key];
+                $update_option = 'update_option';
+    
+                // if multisite
                 if( env_has_value('WP_MULTI_SITE', $env_vars) && $env_vars['WP_MULTI_SITE'] ){
-                    $update_option = 'update_site_option';
+                    if('WP_UPLOAD_FILETYPES' === $key){
+                        $update_option = 'update_site_option';
+                    }
                 }
+                                
+                if('WP_SITEURL' === $key || 'WP_HOME' === $key){
+                    $default_url = 'http://localhost';
+                    $siteurl = get_option('siteurl', $default_url);
+                                
+                    if( false !== strpos($siteurl, $default_url)){
+                        $option_value = str_replace($default_url, $option_value, $option_value);
+                    }
+                }
+    
+                call_user_func($update_option, $option_name, $option_value);
+                printf( 'Updated %1$s to %2$s.' . "\n", $option_name, $option_value);  
+
             }
-            
-            call_user_func($update_option, $option, $env_vars[$key]);
         }
+        
+    } catch (Exception $ex) {
+        print_r("$ex");
     }
 
 }
 
 function activate_default_theme($env_vars){
+    try{
+        if( env_has_value('WP_DEFAULT_THEME', $env_vars)){
+            $theme_activation = true;
 
-    if( env_has_value('WP_DEFAULT_THEME', $env_vars)){
-        $theme_activation = true;
+            // if CAWeb is default theme but Divi is not installed do not activate
+            if( 'CAWeb' === $env_vars['WP_DEFAULT_THEME'] && ! wp_get_theme('Divi')->exists() ){
+                $theme_activation = false;			
+            }
 
-		// if CAWeb is default theme but Divi is not installed do not activate
-		if( 'CAWeb' === $env_vars['WP_DEFAULT_THEME'] && ! wp_get_theme('Divi')->exists() ){
-			$theme_activation = false;			
-		}
+            if( $theme_activation ){
+                switch_theme($env_vars['WP_DEFAULT_THEME']);
+            }
 
-        if( $theme_activation ){
-            switch_theme($env_vars['WP_DEFAULT_THEME']);
         }
-
+    } catch (Exception $ex) {
+        print_r("$ex");
     }
 }
 
 function update_user_admin($env_vars){
-    $user = array();
+    try{
+        $user = array();
 
-    // update display name
-    if( env_has_value('WP_ADMIN_USER', $env_vars) ){
-        global $wpdb;
-
-        $wpdb->update(
-            $wpdb->users, 
-            array(
-                'user_login' => $env_vars['WP_ADMIN_USER']
-            ), 
-            array(
-                'ID' => 1
-            )
-        );
-
-        $user['display_name'] = $env_vars['WP_ADMIN_USER'];
-        $user['user_nicename'] = $env_vars['WP_ADMIN_USER'];
-        $user['nickname'] = $env_vars['WP_ADMIN_USER'];
+        // update display name
+        if( env_has_value('WP_ADMIN_USER', $env_vars) ){
+            global $wpdb;
+    
+            $wpdb->update(
+                $wpdb->users, 
+                array(
+                    'user_login' => $env_vars['WP_ADMIN_USER']
+                ), 
+                array(
+                    'ID' => 1
+                )
+            );
+    
+            $user['display_name'] = $env_vars['WP_ADMIN_USER'];
+            $user['user_nicename'] = $env_vars['WP_ADMIN_USER'];
+            $user['nickname'] = $env_vars['WP_ADMIN_USER'];
+        }
+    
+        // update password
+        if( env_has_value('WP_ADMIN_PASSWORD', $env_vars) ){
+            $user['user_pass'] = $env_vars['WP_ADMIN_PASSWORD'];
+        }
+    
+        // update email
+        if( env_has_value('WP_ADMIN_EMAIL', $env_vars) ){
+            $user['user_email'] = $env_vars['WP_ADMIN_EMAIL'];
+        }
+    
+        // if information was added updated user
+        if( ! empty( $user ) ){
+            $user['ID'] = 1;
+            
+            wp_update_user($user);
+    
+            grant_super_admin(1);
+        }
+    } catch (Exception $ex) {
+        print_r("$ex");
     }
 
-    // update password
-    if( env_has_value('WP_ADMIN_PASSWORD', $env_vars) ){
-        $user['user_pass'] = $env_vars['WP_ADMIN_PASSWORD'];
-    }
-
-    // update email
-    if( env_has_value('WP_ADMIN_EMAIL', $env_vars) ){
-        $user['user_email'] = $env_vars['WP_ADMIN_EMAIL'];
-    }
-
-    // if information was added updated user
-    if( ! empty( $user ) ){
-        $user['ID'] = 1;
-        
-        wp_update_user($user);
-
-        grant_super_admin(1);
-    }
 }
 
 function test($env_vars){
-    configure_caweb($env_vars);
-
+    
     print_r( $env_vars);
 }
 ?>
