@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm-run-all lint",
+    "lint": "concurrently \"npm run lint:js\"",
+    "lint:js": "wp-scripts lint-js",
+    "lint:js:fix": "npm run lint:js -- --fix"
   },
   "keywords": [],
   "author": "",
@@ -18,10 +21,13 @@
   },
   "dependencies": {
     "@types/node": "^18.7.6",
+    "@wordpress/create-block": "^4.1.0",
     "@wordpress/env": "^5.2.0",
+    "@wordpress/scripts": "^24.1.0",
     "chalk": "^4.1.2",
     "change-case": "^4.1.2",
     "commander": "^9.4.0",
+    "concurrently": "^7.4.0",
     "copy-dir": "^1.3.0",
     "docker-compose": "^0.23.17",
     "execa": "^5.1.1",
@@ -34,6 +40,7 @@
     "make-dir": "^3.1.0",
     "mustache": "^4.2.0",
     "node-fetch": "^2.6.7",
+    "npm-run-all": "^4.1.5",
     "ora": "^4.1.1",
     "rimraf": "^3.0.2",
     "simple-git": "^3.13.0"
