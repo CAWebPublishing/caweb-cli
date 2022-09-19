@@ -143,6 +143,9 @@ function init_options($env_vars){
 
 function configure_divi($env_vars){
     try{
+        if( "Divi" !== get_current_theme() ){
+            return;
+        }
         $options = get_divi_options();
         $divi_options = get_option("et_divi");
         $divi_builder = get_option("et_bfb_settings");
@@ -274,6 +277,11 @@ function wp_insert_attachment_from_url( $url, $parent_post_id = null, $id = true
 
 function configure_caweb($env_vars){
     try{
+        
+        if( "CAWeb" !== get_current_theme() ){
+            return;
+        }
+
         $options = get_caweb_options();
 
         foreach($options as $key => $option_name){
@@ -327,15 +335,6 @@ function update_site_settings($env_vars){
                 if( env_has_value('WP_MULTI_SITE', $env_vars) && $env_vars['WP_MULTI_SITE'] ){
                     if('WP_UPLOAD_FILETYPES' === $key){
                         $update_option = 'update_site_option';
-                    }
-                }
-                                
-                if('WP_SITEURL' === $key || 'WP_HOME' === $key){
-                    $default_url = 'http://localhost';
-                    $siteurl = get_option('siteurl', $default_url);
-                                
-                    if( false !== strpos($siteurl, $default_url)){
-                        $option_value = str_replace($default_url, $option_value, $option_value);
                     }
                 }
     
